@@ -1,9 +1,13 @@
 import pandas as pd
 
-# Función para eliminar URLs de una cadena de texto
-def remove_urls(text):
-    # Divide el texto por los espacios en blanco y filtra las partes que no contienen "http://" o "https://"
-    return ' '.join(word for word in text.split() if not ('http://' in word or 'https://' in word))
+# Función para eliminar URLs y palabras cortas de una cadena de texto
+def clean_text(text):
+    # Divide el texto por los espacios en blanco
+    words = text.split()
+    # Filtra las palabras que no son URLs ni tienen longitud igual o inferior a 2
+    filtered_words = [word for word in words if not ('http://' in word or 'https://' in word or len(word) <= 2)]
+    # Une las palabras filtradas de nuevo en una cadena de texto
+    return ' '.join(filtered_words)
 
 # Ruta al archivo de texto
 file_tuistBases = r'C:\Users\aldai\OneDrive\Escritorio\Correo\tuitsBases.txt'
@@ -14,8 +18,11 @@ df = pd.read_csv(file_tuistBases, delimiter=',', header=None)
 # Eliminar la primera columna (índice)
 df = df.drop(columns=[0])
 
-# Aplicar la función para eliminar URLs a todas las columnas de texto en el DataFrame
-df = df.applymap(lambda x: remove_urls(x) if isinstance(x, str) else x)
+# Aplicar la función para limpiar el texto a todas las columnas de texto en el DataFrame
+df = df.applymap(lambda x: clean_text(x) if isinstance(x, str) else x)
+
+# Mostrar las primeras filas del DataFrame
+print(df.head())
 
 # Ruta para el nuevo archivo
 file_tuistBasesNuevo = r'C:\Users\aldai\OneDrive\Escritorio\Correo\tuitsBases_nuevo.txt'
