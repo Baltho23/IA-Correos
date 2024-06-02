@@ -1,33 +1,42 @@
 import pandas as pd
 
-# Función para eliminar URLs y palabras cortas de una cadena de texto
-def clean_text(text):
-    # Divide el texto por los espacios en blanco
+def remove_urls(text):
+
     words = text.split()
-    # Filtra las palabras que no son URLs ni tienen longitud igual o inferior a 2
-    filtered_words = [word for word in words if not ('http://' in word or 'https://' in word or len(word) <= 2)]
-    # Une las palabras filtradas de nuevo en una cadena de texto
+    words = [word for word in words if not ('http://' in word or 'https://' in word)]
+    return ' '.join(words)
+
+def remove_accents(text):
+
+    accented_chars = 'áéíóúüÁÉÍÓÚÜ'
+    unaccented_chars = 'aeiouuAEIOUU'
+    text = ''.join(unaccented_chars[accented_chars.index(char)] if char in accented_chars else char for char in text)
+    return text
+
+def clean_text(text):
+    
+    text = remove_urls(text)
+    cleaned_text = ''.join(char for char in remove_accents(text) if char.isalnum() or char.isspace())
+    words = cleaned_text.split()
+    filtered_words = [word for word in words if len(word) > 2 and any(c.isalpha() for c in word)]
     return ' '.join(filtered_words)
 
-# Ruta al archivo de texto
 file_tuistBases = r'C:\Users\aldai\OneDrive\Escritorio\Correo\tuitsBases.txt'
 
-# Cargar el archivo en un DataFrame
 df = pd.read_csv(file_tuistBases, delimiter=',', header=None)
 
-# Eliminar la primera columna (índice)
-df = df.drop(columns=[0])
+df = df.drop(columns=[0, 1])
 
-# Aplicar la función para limpiar el texto a todas las columnas de texto en el DataFrame
-df = df.applymap(lambda x: clean_text(x) if isinstance(x, str) else x)
+name_counts = df[2].value_counts()
 
-# Mostrar las primeras filas del DataFrame
-print(df.head())
+df_filtered = df[df[2].isin(name_counts.index[name_counts >= 6])]
 
-# Ruta para el nuevo archivo
+df_filtered = df_filtered.applymap(lambda x: clean_text(x) if isinstance(x, str) else x)
+
+print(df_filtered.head())
+
 file_tuistBasesNuevo = r'C:\Users\aldai\OneDrive\Escritorio\Correo\tuitsBases_nuevo.txt'
 
-# Guardar el DataFrame en un nuevo archivo de texto
-df.to_csv(file_tuistBasesNuevo, index=False, header=False, sep=',')
+df_filtered.to_csv(file_tuistBasesNuevo, index=False, header=False, sep=',')
 
 print(f"Archivo guardado en: {file_tuistBasesNuevo}")
