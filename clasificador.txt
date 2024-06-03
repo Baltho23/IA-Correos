@@ -1,0 +1,94 @@
+def load_data(file_path):
+    # Leer el archivo y dividir los datos en comentarios y etiquetas
+    with open(file_path, 'r', encoding='utf-8') as file:
+        lines = file.readlines()
+        comments = []
+        labels = []
+        label_dict = {}  # Diccionario para mapear nombres de usuario a etiquetas únicas
+        label_count = 0  # Contador para asignar etiquetas únicas
+        for line in lines:
+            parts = line.strip().split(',', 1)
+            label = parts[0]
+            if label not in label_dict:
+                label_dict[label] = label_count
+                label_count += 1
+            labels.append(label_dict[label])
+            comments.append(parts[1])
+    return np.array(labels), np.array(comments)
+
+def preprocess_text(text):
+    # Puedes agregar cualquier preprocesamiento adicional según tus necesidades, como tokenización, limpieza de texto, etc.
+    return text.lower()  # Convertir el texto a minúsculas
+
+def train(X, y):
+    # Calcular la probabilidad previa
+    num_samples = len(X)
+    labels = np.unique(y)
+    num_classes = len(labels)
+    
+    # Inicializar diccionarios para almacenar probabilidades
+    prior_prob = {}
+    cond_prob = {}
+
+    for label in labels:
+        # Filas donde la clase es igual a la etiqueta actual
+        X_class = [X[i] for i in range(num_samples) if y[i] == label]
+        
+        # Probabilidad previa P(y)
+        prior_prob[label] = len(X_class) / num_samples
+        
+        # Calcular la probabilidad condicional P(X|y) para cada característica
+        cond_prob[label] = {}
+        # Concatenar todos los comentarios de la clase actual
+        class_comments = ' '.join(X_class)
+        # Tokenizar los comentarios
+        tokens = class_comments.split()
+        # Calcular la frecuencia de cada token
+        token_counts = {}
+        for token in tokens:
+            token_counts[token] = token_counts.get(token, 0) + 1
+        # Calcular la probabilidad condicional P(token|y)
+        total_tokens = sum(token_counts.values())
+        for token, count in token_counts.items():
+            cond_prob[label][token] = count / total_tokens
+    
+    return prior_prob, cond_prob
+
+def predict(X_test, prior_prob, cond_prob):
+    predictions = []
+    for comment in X_test:
+        # Inicializar la probabilidad de la clase para cada etiqueta
+        class_probs = {label: np.log(prior_prob[label]) for label in prior_prob}
+        
+        # Calcular la probabilidad logarítmica de cada clase para el comentario actual
+        for label in cond_prob:
+            for word in comment.split():
+                # Si la palabra está en el vocabulario
+                if word in cond_prob[label]:
+                    class_probs[label] += np.log(cond_prob[label][word])
+        
+        # Seleccionar la clase con la probabilidad logarítmica más alta
+        predicted_label = max(class_probs, key=class_probs.get)
+        predictions.append(predicted_label)
+    
+    return predictions
+
+
+# Cargar datos desde el archivo
+labels, comments = load_data('tuitsLimpios.txt')
+
+# Preprocesar comentarios
+comments = [preprocess_text(comment) for comment in comments]
+
+# Dividir los datos en entrenamiento y prueba (80% entrenamiento, 20% prueba)
+split_index = int(0.8 * len(labels))
+train_labels, test_labels = labels[:split_index], labels[split_index:]
+train_comments, test_comments = comments[:split_index], comments[split_index:]
+
+# Entrenar el modelo
+prior_prob, cond_prob = train(train_comments, train_labels)
+
+# Predecir para el conjunto de prueba
+predictions = predict(test_comments, prior_prob, cond_prob)
+
+print("Predictions:", predictions)

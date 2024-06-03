@@ -30,13 +30,13 @@ def clean_text(text):
     return ' '.join(filtered_words)
 
 # Ruta al archivo de texto
-file_tuistBases = r'C:\Users\aldai\OneDrive\Escritorio\Correo\tuitsBases.txt'
+file_tuistBases = 'tuitsBases.txt'
 
 # Cargar el archivo en un DataFrame
 df = pd.read_csv(file_tuistBases, delimiter=',', header=None)
 
 # Eliminar la primera columna (índice)
-df = df.drop(columns=[0, 1])
+df = df.drop(columns=[0])
 
 # Calcular cuántas veces aparece cada nombre de usuario en la columna 3
 name_counts = df[2].value_counts()
@@ -44,16 +44,42 @@ name_counts = df[2].value_counts()
 # Filtrar el DataFrame original para mantener solo las filas donde el nombre de usuario aparezca al menos 6 veces
 df_filtered = df[df[2].isin(name_counts.index[name_counts >= 6])]
 
-# Aplicar la función para limpiar el texto a todas las columnas de texto en el DataFrame
-df_filtered = df_filtered.applymap(lambda x: clean_text(x) if isinstance(x, str) else x)
+# Aplicar primero la función remove_urls y luego clean_text a todas las columnas de texto en el DataFrame a partir de la tercera columna
+df_filtered.iloc[:, 2:] = df_filtered.iloc[:, 2:].map(lambda x: clean_text(x) if isinstance(x, str) else x)
 
 # Mostrar las primeras filas del DataFrame filtrado
 print(df_filtered.head())
 
 # Ruta para el nuevo archivo
-file_tuistBasesNuevo = r'C:\Users\aldai\OneDrive\Escritorio\Correo\tuitsBases_nuevo.txt'
+file_tuitsLimpios = 'tuitsLimpios.txt'
 
 # Guardar el DataFrame filtrado en un nuevo archivo de texto
-df_filtered.to_csv(file_tuistBasesNuevo, index=False, header=False, sep=',')
+df_filtered.to_csv(file_tuitsLimpios, index=False, header=False, sep=',')
 
-print(f"Archivo guardado en: {file_tuistBasesNuevo}")
+# Cargar el archivo en un DataFrame
+df = pd.read_csv(file_tuitsLimpios, delimiter=',', header=None)
+
+# Crear una lista para almacenar las filas tokenizadas
+tokenized_rows = []
+
+for index, row in df.iterrows():
+    # Obtener el id del tweet y el nombre de usuario de la fila
+    tweet_id, username = row[0], row[1]
+    # Obtener el contenido del tweet y tokenizarlo
+    tweet_content = row[2].split()
+    # Iterar sobre cada palabra del contenido del tweet y agregarla como una nueva fila
+    for word in tweet_content:
+        tokenized_rows.append([tweet_id, username, word])
+
+# Crear un nuevo DataFrame con las filas tokenizadas
+df_tokenized = pd.DataFrame(tokenized_rows, columns=['Tweet ID', 'Username', 'Word'])
+
+# Ruta para el nuevo archivo
+file_tuistTokenizados = 'tuitsTokenizados.txt'
+
+# Guardar el DataFrame tokenizado en un nuevo archivo de texto
+df_tokenized.to_csv(file_tuistTokenizados, index=False, header=False, sep=',')
+
+print(f"Archivo guardado en: {file_tuistTokenizados}")
+
+print(f"Archivo guardado en: {file_tuitsLimpios}")
