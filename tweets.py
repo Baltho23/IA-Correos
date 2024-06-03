@@ -1,4 +1,8 @@
 import pandas as pd
+from sklearn.model_selection import train_test_split
+from sklearn.feature_extraction.text import CountVectorizer
+from sklearn.naive_bayes import MultinomialNB
+from sklearn.metrics import classification_report
 
 def remove_urls(text):
     # Dividir el texto por espacios en blanco
@@ -30,26 +34,41 @@ def clean_text(text):
     return ' '.join(filtered_words)
 
 # Ruta al archivo de texto
+<<<<<<< HEAD
 file_tuistBases = 'tuitsBases.txt'
+=======
+file_tuits_bayes = 'tuitsBases.txt'
+>>>>>>> fd10a3fcc45b98c6fb8766748a16dbcfee1072a1
 
 # Cargar el archivo en un DataFrame
-df = pd.read_csv(file_tuistBases, delimiter=',', header=None)
+df = pd.read_csv(file_tuits_bayes, delimiter=',', header=None, names=['status_id', 'screen_name', 'text'])
 
+<<<<<<< HEAD
 # Eliminar la primera columna (índice)
 df = df.drop(columns=[0])
 
 # Calcular cuántas veces aparece cada nombre de usuario en la columna 3
 name_counts = df[2].value_counts()
+=======
+# Calcular cuántas veces aparece cada nombre de usuario
+name_counts = df['screen_name'].value_counts()
+>>>>>>> fd10a3fcc45b98c6fb8766748a16dbcfee1072a1
 
 # Filtrar el DataFrame original para mantener solo las filas donde el nombre de usuario aparezca al menos 6 veces
-df_filtered = df[df[2].isin(name_counts.index[name_counts >= 6])]
+df_filtered = df[df['screen_name'].isin(name_counts.index[name_counts >= 6])]
 
+<<<<<<< HEAD
 # Aplicar primero la función remove_urls y luego clean_text a todas las columnas de texto en el DataFrame a partir de la tercera columna
 df_filtered.iloc[:, 2:] = df_filtered.iloc[:, 2:].map(lambda x: clean_text(x) if isinstance(x, str) else x)
+=======
+# Aplicar la función para limpiar el texto
+df_filtered['text'] = df_filtered['text'].apply(clean_text)
+>>>>>>> fd10a3fcc45b98c6fb8766748a16dbcfee1072a1
 
 # Mostrar las primeras filas del DataFrame filtrado
 print(df_filtered.head())
 
+<<<<<<< HEAD
 # Ruta para el nuevo archivo
 file_tuitsLimpios = 'tuitsLimpios.txt'
 
@@ -83,3 +102,42 @@ df_tokenized.to_csv(file_tuistTokenizados, index=False, header=False, sep=',')
 print(f"Archivo guardado en: {file_tuistTokenizados}")
 
 print(f"Archivo guardado en: {file_tuitsLimpios}")
+=======
+# Guardar el DataFrame filtrado en un nuevo archivo de texto (opcional)
+file_tuits_bayes_nuevo = 'tuitsBases_nuevo.txt'
+df_filtered.to_csv(file_tuits_bayes_nuevo, index=False, sep=',')
+
+print(f"Archivo guardado en: {file_tuits_bayes_nuevo}")
+
+# Dividir los datos en conjuntos de entrenamiento y prueba
+train_df = pd.DataFrame()
+test_df = pd.DataFrame()
+
+for user in df_filtered['screen_name'].unique():
+    user_tweets = df_filtered[df_filtered['screen_name'] == user]
+    train, test = train_test_split(user_tweets, test_size=0.2, random_state=42)
+    train_df = pd.concat([train_df, train])
+    test_df = pd.concat([test_df, test])
+
+# Calcular las probabilidades a priori
+prior_probabilities = train_df['screen_name'].value_counts(normalize=True)
+
+# Vectorizar los datos
+vectorizer = CountVectorizer()
+X_train = vectorizer.fit_transform(train_df['text'])
+y_train = train_df['screen_name']
+
+# Entrenar el modelo Naive Bayes
+model = MultinomialNB()
+model.fit(X_train, y_train)
+
+# Probar el modelo
+X_test = vectorizer.transform(test_df['text'])
+y_test = test_df['screen_name']
+y_pred = model.predict(X_test)
+
+# Evaluar el rendimiento del modelo
+performance_report = classification_report(y_test, y_pred, output_dict=True)
+performance_df = pd.DataFrame(performance_report).transpose()
+print(performance_df)
+>>>>>>> fd10a3fcc45b98c6fb8766748a16dbcfee1072a1
