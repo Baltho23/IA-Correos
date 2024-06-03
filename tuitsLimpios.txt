@@ -1,3 +1,4 @@
+status_id,screen_name,text
 832421505778618368,lopezobrador_,Josefina Vazquez Mota debe informar que hizo con los mil millones pesos que autorizo EPN Basta corrupcion hipocresia PRIANISTA
 833130565087985664,lopezobrador_,burla perdonan bajaron centavos gasolina Guatemala hay petroleo mas barata gasolina que Mexico Corruptos
 833501308548177921,lopezobrador_,Martin Moreno votara por Comprendo mal escritor dedicado explotar ignorancia conservadurismo sociedad Gracias

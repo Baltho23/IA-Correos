@@ -1,4 +1,26 @@
 import pandas as pd
+import numpy as np
+
+# Reemplazo del vectorizador de la libreria
+class CountVectorizer:
+    def __init__(self):
+        self.vocabulary_ = {}
+    
+    def fit(self, documents):
+        unique_words = set(word for doc in documents for word in doc.split())
+        self.vocabulary_ = {word: idx for idx, word in enumerate(unique_words)}
+    
+    def transform(self, documents):
+        vectors = []
+        for doc in documents:
+            vector = [0] * len(self.vocabulary_)
+            for word in doc.split():
+                if word in self.vocabulary_:
+                    vector[self.vocabulary_[word]] += 1
+            vectors.append(vector)
+        return np.array(vectors)
+
+#
 
 def remove_urls(text):
     # Dividir el texto por espacios en blanco
@@ -29,57 +51,91 @@ def clean_text(text):
     # Une las palabras filtradas de nuevo en una cadena de texto
     return ' '.join(filtered_words)
 
+# Reemplazo del separador de datos para pruebas
+def train_test_split(data, test_size=0.2, random_state=None):
+    
+    if random_state:
+        data = data.sample(frac=1, random_state=random_state)
+    else:
+        data = data.sample(frac=1)
+    
+    split_index = int(len(data) * (1 - test_size))
+    
+    train_data = data.iloc[:split_index]
+    test_data = data.iloc[split_index:]
+    
+    return train_data, test_data
+
 # Ruta al archivo de texto
-file_tuistBases = 'tuitsBases.txt'
+file_tuits_bayes = 'tuitsBases.txt'
 
 # Cargar el archivo en un DataFrame
-df = pd.read_csv(file_tuistBases, delimiter=',', header=None)
+df = pd.read_csv(file_tuits_bayes, delimiter=',', header=None, names=['status_id', 'screen_name', 'text'])
 
-# Eliminar la primera columna (índice)
-df = df.drop(columns=[0])
-
-# Calcular cuántas veces aparece cada nombre de usuario en la columna 3
-name_counts = df[2].value_counts()
+# Calcular cuántas veces aparece cada nombre de usuario
+name_counts = df['screen_name'].value_counts()
 
 # Filtrar el DataFrame original para mantener solo las filas donde el nombre de usuario aparezca al menos 6 veces
-df_filtered = df[df[2].isin(name_counts.index[name_counts >= 6])]
+df_filtered = df[df['screen_name'].isin(name_counts.index[name_counts >= 6])]
 
-# Aplicar primero la función remove_urls y luego clean_text a todas las columnas de texto en el DataFrame a partir de la tercera columna
-df_filtered.iloc[:, 2:] = df_filtered.iloc[:, 2:].map(lambda x: clean_text(x) if isinstance(x, str) else x)
+# Aplicar la función para limpiar el texto
+df_filtered['text'] = df_filtered['text'].apply(clean_text)
 
 # Mostrar las primeras filas del DataFrame filtrado
 print(df_filtered.head())
 
-# Ruta para el nuevo archivo
-file_tuitsLimpios = 'tuitsLimpios.txt'
+# Guardar el DataFrame filtrado en un nuevo archivo de texto (opcional)
+file_tuits_bayes_nuevo = 'tuitsLimpios.txt'
+df_filtered.to_csv(file_tuits_bayes_nuevo, index=False, sep=',')
 
-# Guardar el DataFrame filtrado en un nuevo archivo de texto
-df_filtered.to_csv(file_tuitsLimpios, index=False, header=False, sep=',')
+# Dividir los datos en conjuntos de entrenamiento y prueba
+train_df = pd.DataFrame()
+test_df = pd.DataFrame()
 
-# Cargar el archivo en un DataFrame
-df = pd.read_csv(file_tuitsLimpios, delimiter=',', header=None)
+for user in df_filtered['screen_name'].unique():
+    user_tweets = df_filtered[df_filtered['screen_name'] == user]
+    train, test = train_test_split(user_tweets, test_size=0.2, random_state=40)
+    train_df = pd.concat([train_df, train])
+    test_df = pd.concat([test_df, test])
 
-# Crear una lista para almacenar las filas tokenizadas
-tokenized_rows = []
+# Calcular las probabilidades a priori
+prior_probabilities = train_df['screen_name'].value_counts(normalize=True)
 
-for index, row in df.iterrows():
-    # Obtener el id del tweet y el nombre de usuario de la fila
-    tweet_id, username = row[0], row[1]
-    # Obtener el contenido del tweet y tokenizarlo
-    tweet_content = row[2].split()
-    # Iterar sobre cada palabra del contenido del tweet y agregarla como una nueva fila
-    for word in tweet_content:
-        tokenized_rows.append([tweet_id, username, word])
+# Vectorizar los datos
+vectorizer = CountVectorizer()
+vectorizer.fit(train_df['text'])
+X_train = vectorizer.transform(train_df['text'])
+y_train = train_df['screen_name']
 
-# Crear un nuevo DataFrame con las filas tokenizadas
-df_tokenized = pd.DataFrame(tokenized_rows, columns=['Tweet ID', 'Username', 'Word'])
+# Implementación del clasificador Naive Bayes desde cero
+class NaiveBayes:
+    def __init__(self):
+        self.priors = None
+        self.class_word_counts = None
+    
+    def fit(self, X, y):
+        self.priors = {label: np.log(prob) for label, prob in prior_probabilities.items()}
+        self.class_word_counts = {label: np.log(X[y == label].sum(axis=0) + 1) for label in prior_probabilities.index}
+    
+    def predict(self, X):
+        predictions = []
+        for row in X:
+            scores = {label: prior for label, prior in self.priors.items()}
+            for label, word_counts in self.class_word_counts.items():
+                scores[label] += np.dot(row, word_counts)
+            predicted_label = max(scores, key=scores.get)
+            predictions.append(predicted_label)
+        return predictions
 
-# Ruta para el nuevo archivo
-file_tuistTokenizados = 'tuitsTokenizados.txt'
+# Entrenar el modelo Naive Bayes
+model = NaiveBayes()
+model.fit(X_train, y_train)
 
-# Guardar el DataFrame tokenizado en un nuevo archivo de texto
-df_tokenized.to_csv(file_tuistTokenizados, index=False, header=False, sep=',')
+# Probar el modelo
+X_test = vectorizer.transform(test_df['text'])
+y_test = test_df['screen_name']
+y_pred = model.predict(X_test)
 
-print(f"Archivo guardado en: {file_tuistTokenizados}")
-
-print(f"Archivo guardado en: {file_tuitsLimpios}")
+# Calcular la precisión del modelo
+accuracy = np.mean(y_pred == y_test)
+print("Precisión del modelo Naive Bayes:", accuracy)
