@@ -1,6 +1,10 @@
 import pandas as pd
 import numpy as np
 
+# Librerias para matriz de confusion
+import matplotlib.pyplot as plt
+import seaborn as sns
+
 # Reemplazo del vectorizador de la libreria
 class CountVectorizer:
     def __init__(self):
@@ -180,3 +184,14 @@ print(conf_matrix)
 print("\nTabla Resumen:")
 print(summary_table)
 print("\nPrecisión General:", overall_accuracy)
+
+# Grafica de matriz de confusion
+labels = ['Clase 0', 'Clase 1'] 
+
+plt.figure(figsize=(8, 6))
+sns.heatmap(conf_matrix, annot=True, cmap='Blues', fmt='g', xticklabels=labels, yticklabels=labels)
+
+plt.xlabel('Predicción')
+plt.ylabel('Verdadero')
+plt.title('Matriz de Confusión')
+plt.show()
