@@ -139,3 +139,48 @@ y_pred = model.predict(X_test)
 # Calcular la precisión del modelo
 accuracy = np.mean(y_pred == y_test)
 print("Precisión del modelo Naive Bayes:", accuracy)
+
+# Función para calcular la matriz de confusión
+def confusion_matrix(y_true, y_pred, labels):
+    matrix = np.zeros((len(labels), len(labels)), dtype=int)
+    label_to_index = {label: idx for idx, label in enumerate(labels)}
+    for true, pred in zip(y_true, y_pred):
+        matrix[label_to_index[true], label_to_index[pred]] += 1
+    return matrix
+
+# Función para calcular precisión, recall y F1-score
+def calculate_metrics(conf_matrix):
+    # Precision: TP / (TP + FP)
+    precision = np.diag(conf_matrix) / np.sum(conf_matrix, axis=0)
+    # Recall: TP / (TP + FN)
+    recall = np.diag(conf_matrix) / np.sum(conf_matrix, axis=1)
+    # F1-Score: 2 * (Precision * Recall) / (Precision + Recall)
+    f1_score = 2 * (precision * recall) / (precision + recall)
+    return precision, recall, f1_score
+
+# Etiquetas de clase
+labels = prior_probabilities.index
+
+# Calcular la matriz de confusión
+conf_matrix = confusion_matrix(y_test, y_pred, labels)
+
+# Calcular precisión, recall y F1-score
+precision, recall, f1_score = calculate_metrics(conf_matrix)
+
+# Crear tabla de resumen
+summary_table = pd.DataFrame({
+    'User': labels,
+    'Precision': precision,
+    'Recall': recall,
+    'F1-Score': f1_score
+})
+
+# Calcular precisión general
+overall_accuracy = np.mean(y_pred == y_test)
+
+# Mostrar los resultados
+print("Matriz de Confusión:")
+print(conf_matrix)
+print("\nTabla Resumen:")
+print(summary_table)
+print("\nPrecisión General:", overall_accuracy)
