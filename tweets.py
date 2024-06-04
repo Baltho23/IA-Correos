@@ -186,7 +186,7 @@ print(summary_table)
 print("\nPrecisión General:", overall_accuracy)
 
 # Grafica de matriz de confusion
-labels = ['Clase 0', 'Clase 1'] 
+labels = ['lopezobrador_', 'UNAM_MX','MSFTMexico','CMLL_OFICIAL'] 
 
 plt.figure(figsize=(8, 6))
 sns.heatmap(conf_matrix, annot=True, cmap='Blues', fmt='g', xticklabels=labels, yticklabels=labels)
