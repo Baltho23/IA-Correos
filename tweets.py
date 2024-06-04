@@ -136,10 +136,6 @@ X_test = vectorizer.transform(test_df['text'])
 y_test = test_df['screen_name']
 y_pred = model.predict(X_test)
 
-# Calcular la precisión del modelo
-accuracy = np.mean(y_pred == y_test)
-print("Precisión del modelo Naive Bayes:", accuracy)
-
 # Función para calcular la matriz de confusión
 def confusion_matrix(y_true, y_pred, labels):
     matrix = np.zeros((len(labels), len(labels)), dtype=int)
