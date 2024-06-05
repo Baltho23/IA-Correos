@@ -1,3 +1,9 @@
+#Integrantes
+#    Airton Sampayo
+#    Juan Diego Marin
+#    Keyner Barrios
+#    Eliecer Ureche
+
 import pandas as pd
 import numpy as np
 
